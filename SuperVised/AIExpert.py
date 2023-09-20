@@ -36,22 +36,21 @@ def GetData(x):
     path = CheckExistence(path)
     while(not read):
         extension = path.split(".")[-1]
-        match(extension):
-            case("csv"):
-                read = True
-                print(pd.read_csv(path))
-                return (pd.read_csv(path))
-            case("xls"):
-                read = True
-                print(pd.read_excel(path))
-                return (pd.read_excel(path))
-            case("sql"):
+        if(extension=="csv"):
+            read = True
+            print(pd.read_csv(path))
+            return (pd.read_csv(path))
+        elif(extension=="xls"):
+            read = True
+            print(pd.read_excel(path))
+            return (pd.read_excel(path))
+        elif(extension=="sql"):
                 read = True
                 print(pd.read_sql(path))
                 return (pd.read_sql(path))
-            case(_):
-                path = input("Please enter a supported file type: ")
-                path = CheckExistence(path)
+        else:
+            path = input("Please enter a supported file type: ")
+            path = CheckExistence(path)
 
 def CheckExistence(path):
     while(not exists(path)):
