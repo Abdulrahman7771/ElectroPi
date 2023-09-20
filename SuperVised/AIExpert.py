@@ -4,11 +4,9 @@ Created on Sun Sep 10 22:06:53 2023
 
 @author: 3ndalib
 """
-import sys
+
 import pandas as pd
-from pandas.api.types import is_object_dtype as ObjectDtype
-import matplotlib.pyplot as plt
-import seaborn as sns
+
 from os.path import exists    
 from sklearn.linear_model import LinearRegression as LNR
 from sklearn.linear_model import LogisticRegression as LR
@@ -24,7 +22,7 @@ from sklearn.preprocessing import LabelEncoder as LE
 from sklearn.preprocessing import StandardScaler as SS
 from sklearn.preprocessing import PolynomialFeatures as polynomial
 from sklearn.metrics import ConfusionMatrixDisplay
-from sklearn.compose import ColumnTransformer
+
 import streamlit as st
 from sklearn.metrics import mean_absolute_error,accuracy_score,precision_score,recall_score,r2_score,mean_squared_error
 
