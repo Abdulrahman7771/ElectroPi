@@ -27,69 +27,116 @@ from sklearn.metrics import ConfusionMatrixDisplay
 import streamlit as st
 from sklearn.metrics import mean_absolute_error,accuracy_score,precision_score,recall_score,r2_score,mean_squared_error
 
-st.write("s.info")
-
 
 pd.set_option('display.max_columns', None)
 
-def GetData(x):
-    read = False
-    path = x
-    path = CheckExistence(path)
-    while(not read):
-        extension = path.split(".")[-1]
+# def GetData(x):
+#     read = False
+#     path = x
+#     path = CheckExistence(path)
+#     while(not read):
+#         extension = path.split(".")[-1]
+#         if(extension=="csv"):
+#             read = True
+#             print(pd.read_csv(path))
+#             return (pd.read_csv(path))
+#         elif(extension=="xls"):
+#             read = True
+#             print(pd.read_excel(path))
+#             return (pd.read_excel(path))
+#         elif(extension=="sql"):
+#                 read = True
+#                 print(pd.read_sql(path))
+#                 return (pd.read_sql(path))
+#         else:
+#             path = input("Please enter a supported file type: ")
+            
+    
+if "file_uploader_key" not in st.session_state:
+    st.session_state["file_uploader_key"] = 0
+
+if "uploaded_files" not in st.session_state:
+    st.session_state["uploaded_files"] = []
+
+file = st.file_uploader(
+    "Upload your data file",
+    accept_multiple_files=False,
+    key=st.session_state["file_uploader_key"],
+)
+
+if file:
+    st.session_state["uploaded_files"] = file
+
+# if st.button("Clear uploaded files"):
+#     st.session_state["file_uploader_key"] += 1
+#     st.experimental_rerun()
+
+
+
+if file is not None:
+        extension = file.name.split(".")[-1]
         if(extension=="csv"):
-            read = True
-            print(pd.read_csv(path))
-            return (pd.read_csv(path))
-        elif(extension=="xls"):
-            read = True
-            print(pd.read_excel(path))
-            return (pd.read_excel(path))
+            df = pd.read_csv(file)
+            st.toast("File uploaded succesfuly")
+        elif(extension=="xls" or extension=="xlsx"):
+            df = pd.read_excel(file)
+            st.toast("File uploaded succesfuly")
         elif(extension=="sql"):
-                read = True
-                print(pd.read_sql(path))
-                return (pd.read_sql(path))
+            df = pd.read_sql(file)
+            st.toast("File uploaded succesfuly")
         else:
-            path = input("Please enter a supported file type: ")
-            path = CheckExistence(path)
+            st.session_state["file_uploader_key"] += 1
+            st.experimental_rerun()  
+            
 
-def CheckExistence(path):
-    while(not exists(path)):
-        path = input("Please enter a valid file path like 'Drive:\folder1\folder2\example.csv': ")
-    return path        
+def TaskType(df,target):
+    if(not (df[target].dtype.kind in 'biufc')):
+        return "classification"
+    else:
+        if(df[target].nunique()>5):
+            return "regression"
+        else:
+            return "classification"
 
-df = GetData("BostonHousing.csv")
-def HandleNan(df):
-     if(df.isnull().any(axis=1).sum() <= (df.shape[0]/10)):
-         df = df.dropna()
-         df = df.reset_index(drop=True)
-         return df
-     else:
-         return df.fillna(df.mode())
+def HandleNan(df,numerical,categorical):
+    for i in range(df.shape[1]):
+        if( df.iloc[:,i].dtype.kind in 'biufc'):
+            if(numerical=="mean"):
+                df.iloc[:,i] = df.iloc[:,i].fillna(df.iloc[:,i].mean)
+            else:
+                df.iloc[:,i] = df.iloc[:,i].fillna(df.iloc[:,i].mode)
+        else:
+            if(categorical=="mode"):
+                df.iloc[:,i] = df.iloc[:,i].fillna(df.iloc[:,i].mode)
+            else:
+                df.iloc[:,i] = df.iloc[:,i].fillna(categorical)
+    return df
 def LabelEncoding(df):
     for i in range(df.shape[1]):
         if(not (df.iloc[:,i].dtype.kind in 'biufc')):
             df.iloc[:,i] = LE().fit_transform(df.iloc[:,i])
     return df
+
 def StandardScaling(df,target):
     for i in range(df.shape[1]):
         if(df.iloc[:,i].dtype.kind in 'biufc' and df.columns[i]!=target):
             df.iloc[:,i] = SS().fit_transform(df[[df.columns[i]]]).flatten()
     return df
-def PreProcess(df,target):
-    df = HandleNan(df)
+def PreProcess(df,target,numerical,categorical):
+    df = HandleNan(df,numerical,categorical)
     df = StandardScaling(df, target)
     df = LabelEncoding(df)
     return(df)    
 
     
 class ClassificationExpert:
-    def setup(self,data,target,TestSize=0.3):
+    def setup(self,data,target,numerical,categorical,TestSize=0.3):
         self.data = data
         self.target = target
+        self.numerical = numerical
+        self.categorical = categorical
         self.TestSize = TestSize
-        self.PPData = PreProcess(self.data,self.target)
+        self.PPData = PreProcess(self.data,self.target,self.numerical,self.categorical)
         print(self.PPData)
         self.x,self.y=self.PPData.drop(target,axis=1),self.PPData[target]
         print(self.x)
@@ -175,11 +222,13 @@ class ClassificationExpert:
         disp = ConfusionMatrixDisplay.from_estimator(self.rfclf,self.XTest,self.YTest)
 
 class RegressionExpert:
-    def setup(self,data,target,TestSize=0.3):
+    def setup(self,data,target,numerical,categorical,TestSize=0.3):
         self.data = data
         self.target = target
+        self.numerical = numerical
+        self.categorical = categorical
         self.TestSize = TestSize
-        self.PPData = PreProcess(self.data,self.target)
+        self.PPData = PreProcess(self.data,self.target,self.numerical,self.categorical)
         print(self.PPData)
         self.x,self.y=self.PPData.drop(target,axis=1),self.PPData[target]
         print(self.x)
@@ -274,14 +323,28 @@ class RegressionExpert:
     #     disp = ConfusionMatrixDisplay.from_estimator(self.rfclf,self.XTrain,self.YTrain)
     #     disp = ConfusionMatrixDisplay.from_estimator(self.rfclf,self.XTest,self.YTest)
 
-
-s = RegressionExpert()
-s.setup(df, "medv")
-print(s.info)
-s.CompareModels()
-
-st.write(s.info)
-
+if file is not None:
+    st.caption("Data head")
+    st.write(df.head())
+    target = st.selectbox('Choose target column to predict', df.columns)
+    d = df.columns.values.tolist()
+    d.remove(target)
+    dropcolumns = st.multiselect('Select Columns to drop'
+                , d)
+    df = df.drop(dropcolumns,axis=1)
+    st.toast("Columns dropped succesfuly")
+    st.write(df.head())
+    match TaskType(df,target):
+        case 'regression':
+            expert = RegressionExpert()
+        case 'classification':
+            expert = ClassificationExpert()
+    HandleNumericNan = st.selectbox('Choose how to handle numeric null values', ["mean","mode"])
+    HandleCategoricalNan = st.selectbox('Choose how to handle categorical null values', ["mode","add a new category"])
+    if HandleCategoricalNan == "add a new category":
+        HandleCategoricalNan = st.text_input("Enter the category")
+    TestSize = st.slider('choose test data size', min_value=0.1, max_value=0.5)
+    expert.setup(df, target, HandleNumericNan, HandleCategoricalNan,TestSize)
 # s = ClassificationExpert()
 # s.setup(df, "Purchased")
 # print(s.info)
