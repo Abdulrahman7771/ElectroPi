@@ -277,7 +277,7 @@ s.setup(df, "medv")
 print(s.info)
 s.CompareModels()
 
-st.write("Hello")
+st.write(s.info)
 
 # s = ClassificationExpert()
 # s.setup(df, "Purchased")
