@@ -8,6 +8,7 @@ Created on Sun Sep 10 22:06:53 2023
 import pandas as pd
 
 from os.path import exists    
+import streamlit as st
 from sklearn.linear_model import LinearRegression as LNR
 from sklearn.linear_model import LogisticRegression as LR
 from sklearn.linear_model import Lasso as lasso
@@ -55,7 +56,7 @@ def CheckExistence(path):
         path = input("Please enter a valid file path like 'Drive:\folder1\folder2\example.csv': ")
     return path        
 
-df = GetData("E:\Projects\ElectroPiExtras\BostonHousing.csv")
+df = GetData("BostonHousing.csv")
 def HandleNan(df):
      if(df.isnull().any(axis=1).sum() <= (df.shape[0]/10)):
          df = df.dropna()
@@ -275,6 +276,8 @@ s = RegressionExpert()
 s.setup(df, "medv")
 print(s.info)
 s.CompareModels()
+
+st.write("Hello")
 
 # s = ClassificationExpert()
 # s.setup(df, "Purchased")
