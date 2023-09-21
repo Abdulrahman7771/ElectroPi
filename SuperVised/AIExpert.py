@@ -27,6 +27,9 @@ from sklearn.metrics import ConfusionMatrixDisplay
 import streamlit as st
 from sklearn.metrics import mean_absolute_error,accuracy_score,precision_score,recall_score,r2_score,mean_squared_error
 
+st.write("s.info")
+
+
 pd.set_option('display.max_columns', None)
 
 def GetData(x):
