@@ -6,8 +6,6 @@ Created on Sun Sep 10 22:06:53 2023
 """
 
 import pandas as pd
-
-from os.path import exists    
 import streamlit as st
 from sklearn.linear_model import LinearRegression as LNR
 from sklearn.linear_model import LogisticRegression as LR
@@ -22,36 +20,11 @@ from sklearn.model_selection import train_test_split as tts
 from sklearn.preprocessing import LabelEncoder as LE
 from sklearn.preprocessing import StandardScaler as SS
 from sklearn.preprocessing import PolynomialFeatures as polynomial
-from sklearn.metrics import ConfusionMatrixDisplay
-
-import streamlit as st
 from sklearn.metrics import mean_absolute_error,accuracy_score,precision_score,recall_score,r2_score,mean_squared_error
 
 
 pd.set_option('display.max_columns', None)
 
-# def GetData(x):
-#     read = False
-#     path = x
-#     path = CheckExistence(path)
-#     while(not read):
-#         extension = path.split(".")[-1]
-#         if(extension=="csv"):
-#             read = True
-#             print(pd.read_csv(path))
-#             return (pd.read_csv(path))
-#         elif(extension=="xls"):
-#             read = True
-#             print(pd.read_excel(path))
-#             return (pd.read_excel(path))
-#         elif(extension=="sql"):
-#                 read = True
-#                 print(pd.read_sql(path))
-#                 return (pd.read_sql(path))
-#         else:
-#             path = input("Please enter a supported file type: ")
-            
-    
 if "file_uploader_key" not in st.session_state:
     st.session_state["file_uploader_key"] = 0
 
@@ -66,12 +39,6 @@ file = st.file_uploader(
 
 if file:
     st.session_state["uploaded_files"] = file
-
-# if st.button("Clear uploaded files"):
-#     st.session_state["file_uploader_key"] += 1
-#     st.experimental_rerun()
-
-
 
 if file is not None:
         extension = file.name.split(".")[-1]
@@ -90,7 +57,7 @@ if file is not None:
             
 
 def TaskType(df,target):
-    if(not (df[target].dtype.kind in 'biufc')):
+    if(not (df[target].dtype.kind in 'iufc')):
         return "classification"
     else:
         if(df[target].nunique()>5):
@@ -100,21 +67,24 @@ def TaskType(df,target):
 
 def HandleNan(df,numerical,categorical):
     for i in range(df.shape[1]):
-        if( df.iloc[:,i].dtype.kind in 'biufc'):
+        if( df.iloc[:,i].dtype.kind in 'iufc'):
             if(numerical=="mean"):
-                df.iloc[:,i] = df.iloc[:,i].fillna(df.iloc[:,i].mean)
+                df.iloc[:,i] = df.iloc[:,i].fillna(df.iloc[:,i].mean())
+            elif(numerical=="median"):
+                df.iloc[:,i] = df.iloc[:,i].fillna(df.iloc[:,i].median())
             else:
-                df.iloc[:,i] = df.iloc[:,i].fillna(df.iloc[:,i].mode)
+                df.iloc[:,i] = df.iloc[:,i].fillna(df.iloc[:,i].mode()[0])
         else:
             if(categorical=="mode"):
-                df.iloc[:,i] = df.iloc[:,i].fillna(df.iloc[:,i].mode)
+                df.iloc[:,i] = df.iloc[:,i].fillna(df.iloc[:,i].mode()[0])
             else:
                 df.iloc[:,i] = df.iloc[:,i].fillna(categorical)
     return df
 def LabelEncoding(df):
     for i in range(df.shape[1]):
-        if(not (df.iloc[:,i].dtype.kind in 'biufc')):
+        if(not (df.iloc[:,i].dtype.kind in 'iufc')):
             df.iloc[:,i] = LE().fit_transform(df.iloc[:,i])
+            df.iloc[:,i] = df.iloc[:,i].astype('int')
     return df
 
 def StandardScaling(df,target):
@@ -123,9 +93,16 @@ def StandardScaling(df,target):
             df.iloc[:,i] = SS().fit_transform(df[[df.columns[i]]]).flatten()
     return df
 def PreProcess(df,target,numerical,categorical):
+    st.write("HandleNan")
     df = HandleNan(df,numerical,categorical)
+    st.write(df.head())
+    st.write("Scaling")
     df = StandardScaling(df, target)
+    st.write(df.head())
+    st.write("Encoding")
     df = LabelEncoding(df)
+    st.write(df.head())
+    df[target]=df[target].astype('int')
     return(df)    
 
     
@@ -137,10 +114,9 @@ class ClassificationExpert:
         self.categorical = categorical
         self.TestSize = TestSize
         self.PPData = PreProcess(self.data,self.target,self.numerical,self.categorical)
-        print(self.PPData)
+
         self.x,self.y=self.PPData.drop(target,axis=1),self.PPData[target]
-        print(self.x)
-        print(self.y)
+
         self.XTrain,self.XTest,self.YTrain,self.YTest =  tts(self.x,self.y,test_size=TestSize)
         self.info = pd.DataFrame({"Description":["Target",
                                                   "Original Shape",
@@ -158,6 +134,7 @@ class ClassificationExpert:
                                             self.YTest.shape]})
     def CompareModels(self):
         self.lrclf = LR()
+
         self.lrclf.fit(self.XTrain, self.YTrain)
         self.lrpreds = self.lrclf.predict(self.XTrain)
         self.lrtestpreds = self.lrclf.predict(self.XTest)
@@ -169,8 +146,8 @@ class ClassificationExpert:
         
         self.knclf = KNC()
         self.knclf.fit(self.XTrain, self.YTrain)
-        self.knpreds = self.knclf.predict(self.XTrain)
-        self.kntestpreds = self.knclf.predict(self.XTest)
+        self.knpreds = self.knclf.predict(self.XTrain.values)
+        self.kntestpreds = self.knclf.predict(self.XTest.values)
         
         self.dtclf = DTC(max_depth=5)
         self.dtclf.fit(self.XTrain, self.YTrain)
@@ -202,24 +179,19 @@ class ClassificationExpert:
                  accuracy_score(self.YTest, self.dttestpreds),
                  accuracy_score(self.YTest, self.rftestpreds),],
              "Precision":[
-                 precision_score(self.YTrain, self.lrpreds),
-                 precision_score(self.YTrain, self.csvpreds),
-                 precision_score(self.YTrain, self.knpreds),
-                 precision_score(self.YTrain, self.dtpreds),
-                 precision_score(self.YTrain, self.rfpreds),],
+                 precision_score(self.YTest, self.lrtestpreds, average='weighted'),
+                 precision_score(self.YTest, self.csvtestpreds, average='weighted'),
+                 precision_score(self.YTest, self.kntestpreds, average='weighted'),
+                 precision_score(self.YTest, self.dttestpreds, average='weighted'),
+                 precision_score(self.YTest, self.rftestpreds, average='weighted'),],
              "Recall":[                                            
-                 recall_score(self.YTrain, self.lrpreds),
-                 recall_score(self.YTrain, self.csvpreds),
-                 recall_score(self.YTrain, self.knpreds),
-                 recall_score(self.YTrain, self.dtpreds),
-                 recall_score(self.YTrain, self.rfpreds),]})
-        print(self.ModelsPerformance)
-        self.best = self.ModelsPerformance.query('TestAccuracy == TestAccuracy.max()')
-        self.best = self.ModelsPerformance.query('TrainAccuracy == TrainAccuracy.max()')
-        print(self.best)
-    def plot(self):
-        disp = ConfusionMatrixDisplay.from_estimator(self.rfclf,self.XTrain,self.YTrain)
-        disp = ConfusionMatrixDisplay.from_estimator(self.rfclf,self.XTest,self.YTest)
+                 recall_score(self.YTest, self.lrtestpreds, average='macro'),
+                 recall_score(self.YTest, self.csvtestpreds, average='macro'),
+                 recall_score(self.YTest, self.kntestpreds, average='macro'),
+                 recall_score(self.YTest, self.dttestpreds, average='macro'),
+                 recall_score(self.YTest, self.rftestpreds, average='macro'),]})
+        return(self.ModelsPerformance)
+   
 
 class RegressionExpert:
     def setup(self,data,target,numerical,categorical,TestSize=0.3):
@@ -229,10 +201,9 @@ class RegressionExpert:
         self.categorical = categorical
         self.TestSize = TestSize
         self.PPData = PreProcess(self.data,self.target,self.numerical,self.categorical)
-        print(self.PPData)
+
         self.x,self.y=self.PPData.drop(target,axis=1),self.PPData[target]
-        print(self.x)
-        print(self.y)
+        
         self.XTrain,self.XTest,self.YTrain,self.YTest =  tts(self.x,self.y,test_size=TestSize)
         self.info = pd.DataFrame({"Description":["Target",
                                                   "Original Shape",
@@ -315,7 +286,7 @@ class RegressionExpert:
                  mean_absolute_error(self.YTest, self.polysgdtestpreds),
              ]
              })
-        print(self.ModelsPerformance)
+        return(self.ModelsPerformance)
         # self.best = self.ModelsPerformance.query('TestAccuracy == TestAccuracy.max()')
         # self.best = self.ModelsPerformance.query('TrainAccuracy == TrainAccuracy.max()')
         # print(self.best)
@@ -339,17 +310,40 @@ if file is not None:
             expert = RegressionExpert()
         case 'classification':
             expert = ClassificationExpert()
-    HandleNumericNan = st.selectbox('Choose how to handle numeric null values', ["mean","mode"])
+    st.write(TaskType(df, target))
+    HandleNumericNan = st.selectbox('Choose how to handle numeric null values', ["mean","mode","median"])
     HandleCategoricalNan = st.selectbox('Choose how to handle categorical null values', ["mode","add a new category"])
     if HandleCategoricalNan == "add a new category":
         HandleCategoricalNan = st.text_input("Enter the category")
     TestSize = st.slider('choose test data size', min_value=0.1, max_value=0.5)
     expert.setup(df, target, HandleNumericNan, HandleCategoricalNan,TestSize)
-# s = ClassificationExpert()
-# s.setup(df, "Purchased")
-# print(s.info)
-# s.CompareModels()
-# s.plot()
+    st.write("Comparing models")
+    st.write(expert.CompareModels())
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
