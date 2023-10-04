@@ -3,6 +3,8 @@ import cv2
 import numpy as np
 import pytesseract
 import streamlit as st
+from PIL import Image
+
 
 if "file_uploader_key" not in st.session_state:
     st.session_state["file_uploader_key"] = 0
@@ -20,9 +22,9 @@ if file:
     st.session_state["uploaded_files"] = file
 
 if file is not None:
-    st.write(file.name)
-    img = cv2.imread(file.name,0)
-    img = cv2.cvtColor(img, cv2.COLOR_RGB2BGR)
+    original_image = Image.open(file)
+    original_image = np.array(original_image)
+    img = cv2.imread(original_image,0)
     st.image(file)
     
     kernel = np.ones((2,2))
