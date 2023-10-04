@@ -21,9 +21,8 @@ if file:
 
 if file is not None:
     st.write(file.name)
-    img = cv2.imread(file.name)
-    rgb = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
-    st.image(rgb)
+    img = cv2.imread(file.name,0)
+    st.image(file)
     
     gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
     kernel = np.ones((2,2))
