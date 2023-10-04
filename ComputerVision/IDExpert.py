@@ -24,11 +24,10 @@ if file is not None:
     img = cv2.imread(file.name,0)
     st.image(file)
     
-    gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
     kernel = np.ones((2,2))
     
     
-    ret, thresh = cv2.threshold(gray
+    ret, thresh = cv2.threshold(img
                                 , 127, 255
                                 ,  cv2.THRESH_BINARY)
     
