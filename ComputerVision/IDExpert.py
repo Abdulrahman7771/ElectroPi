@@ -20,6 +20,7 @@ if file:
     st.session_state["uploaded_files"] = file
 
 if file is not None:
+    st.write(file.name)
     img = cv2.imread(file.name)
     st.image(img)
     
