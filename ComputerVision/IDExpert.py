@@ -24,7 +24,7 @@ if file:
 if file is not None:
     original_image = Image.open(file)
     original_image = np.array(original_image)
-    img = cv2.imread(original_image,0)
+    img = original_image
     st.image(file)
     
     kernel = np.ones((2,2))
