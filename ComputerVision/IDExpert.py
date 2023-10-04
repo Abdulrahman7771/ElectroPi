@@ -41,7 +41,7 @@ if file is not None:
     
     
     
-    pytesseract.pytesseract.tesseract_cmd = "tesseract.exe"
+    pytesseract.pytesseract.tesseract_cmd = "C:\Program Files\Tesseract-OCR\tesseract.exe"
     result = pytesseract.image_to_string(laplacian,lang="ara")
     print(result)
     
