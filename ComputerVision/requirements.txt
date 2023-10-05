@@ -1,6 +1,0 @@
-streamlit
-pandas
-numpy
-opencv-python-headless
-pytesseract
-pillow
