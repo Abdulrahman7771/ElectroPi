@@ -45,7 +45,7 @@ plt.show()
 pytesseract.pytesseract.tesseract_cmd = r"C:\Program Files\Tesseract-OCR\tesseract.exe"
 result = pytesseract.image_to_string(laplacian,lang="ara")
 
-laplacian = OLaplacian[OLaplacian.shape[0]-int(OLaplacian.shape[0]/3):OLaplacian.shape[0],int(OLaplacian.shape[1]/3):OLaplacian.shape[1]]
+laplacian = OLaplacian[OLaplacian.shape[0]-int(OLaplacian.shape[0]/2):OLaplacian.shape[0],int(OLaplacian.shape[1]/2):OLaplacian.shape[1]]
 rgb = cv2.cvtColor(laplacian, cv2.COLOR_BGR2RGB)
 plt.imshow(rgb)
 plt.show()
@@ -73,10 +73,7 @@ for i in range(2,len(info)):
 data.update({"الرقم القومي":num})
 
 df = pd.DataFrame.from_dict(data)
-df.style.set_table_attributes('style="font-size: 20px"')
-
-
-
+df.style.set_table_attributes('style="font-size: 20px"') 
 
 
 
