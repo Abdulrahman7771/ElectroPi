@@ -52,7 +52,7 @@ plt.show()
 
 numres = pytesseract.image_to_string(laplacian
                                      ,lang="aranumberLayer2")
-
+print(numres)
 num, slash = numres.split("\n")
 
 info = []
